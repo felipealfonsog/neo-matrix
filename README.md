@@ -74,6 +74,20 @@ Run the following commands:
 make -j3
 sudo make install
 ```
+### Option 3: Bash Installer for macOS, Arch, Debian Based, FreeBSD.
+
+Download the bash installer:
+
+```
+https://raw.githubusercontent.com/felipealfonsog/neo-matrix/main/neo-matrix-bashinstaller/install-neo-matrix.sh
+```
+
+```
+chmod +x install-neo-matrix.sh
+./install-neo-matrix.sh
+```
+
+<sub>Note: This installer is currently under development. While it is functional, please be aware that it may contain bugs or issues. Use at your own discretion.</sub>
 
 ## Uninstalling
 
