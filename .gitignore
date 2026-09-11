@@ -14,3 +14,4 @@ neo
 .deps
 *.o
 *.core
+.DS_Store
