@@ -1,185 +1,177 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Welcome Message
-echo "+------------------------+------------------------------+"
-echo "| Welcome to the Neo-Matrix Installer!                   |"
-echo "| This script will install the Neo-Matrix application    |"
-echo "| and the Hanazono font on your system. It will handle   |"
-echo "| dependencies, build, and installation steps for various|"
-echo "| operating systems.                                    |"
-echo "+------------------------+------------------------------+"
+set -Eeuo pipefail
 
-# Function to install Hanazono font
-install_hanazono_font() {
-    echo "Installing Hanazono font..."
+REPO_URL="https://github.com/st3w/neo.git"
+BUILD_DIR=""
+MAKE_CMD="make"
 
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        # macOS-specific installation for Hanazono font
-        font_zip="hanazono-20170904.zip"
-        wget https://glyphwiki.org/hanazono/$font_zip
-        unzip $font_zip -d hanazono-font
-
-        # Create the fonts directory if it does not exist
-        if [ ! -d "/Library/Fonts" ]; then
-            sudo mkdir -p /Library/Fonts
-        fi
-
-        # Move the font files to /Library/Fonts
-        sudo mv hanazono-font/* /Library/Fonts/
-        rm -rf $font_zip hanazono-font
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        fonts_dir="/usr/share/fonts"
-        if [[ -f /etc/arch-release ]]; then
-            # Arch Linux-specific installation for Hanazono font
-            sudo pacman -S --noconfirm ttf-hanazono
-        elif [[ -f /etc/debian_version ]]; then
-            # Debian-based Linux-specific installation for Hanazono font
-            sudo apt-get update
-            sudo apt-get install -y fonts-hanazono
-        elif [[ -f /etc/fedora-release ]]; then
-            # Fedora/Red Hat-specific installation for Hanazono font
-            fonts_dir="/usr/share/fonts"
-            curl -L -o "${fonts_dir}/Hanazono.zip" https://glyphwiki.org/hanazono/hanazono-20170904.zip
-            sudo unzip "${fonts_dir}/Hanazono.zip" -d "${fonts_dir}"
-            sudo fc-cache -f -v
-        fi
-    elif [[ "$OSTYPE" == "freebsd"* ]]; then
-        # FreeBSD-specific installation for Hanazono font
-        fonts_dir="/usr/local/share/fonts"
-        sudo pkg install -y font-fallback-hanazono
-        sudo fc-cache -f -v
-    fi
+log() {
+    printf '[neo-installer] %s\n' "$*"
 }
 
-# Function to install dependencies and Neo-Matrix on Arch Linux
-install_arch_dependencies() {
-    echo "Installing dependencies for Arch Linux..."
-    sudo pacman -S --noconfirm ncurses autoconf automake libtool
-}
-
-# Function to install dependencies and Neo-Matrix on Debian-based Linux
-install_debian_dependencies() {
-    echo "Installing dependencies for Debian-based Linux..."
-    sudo apt-get update
-    sudo apt-get install -y ncurses-dev autoconf automake libtool
-}
-
-# Function to install dependencies and Neo-Matrix on Fedora/Red Hat
-install_fedora_dependencies() {
-    echo "Installing dependencies for Fedora/Red Hat..."
-    sudo dnf install -y ncurses-devel autoconf automake libtool
-}
-
-# Function to install dependencies and Neo-Matrix on FreeBSD
-install_freebsd_dependencies() {
-    echo "Installing dependencies for FreeBSD..."
-    sudo pkg install -y ncurses autoconf automake libtool
-}
-
-# Detect the operating system
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS-specific commands
-    echo "Detected macOS."
-
-    # Check if Homebrew is installed
-    if ! command -v brew &> /dev/null; then
-        echo "Homebrew not found. Installing Homebrew..."
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    fi
-
-    # Install dependencies
-    echo "Installing dependencies..."
-    brew install ncurses
-
-    # Install Hanazono font
-    install_hanazono_font
-
-    # Clone the repository
-    echo "Cloning Neo-Matrix repository..."
-    git clone https://github.com/st3w/neo.git
-    cd neo
-
-    # Build the project
-    echo "Building the project..."
-    ./autogen.sh
-    CFLAGS="-I$(brew --prefix ncurses)/include" LDFLAGS="-L$(brew --prefix ncurses)/lib" ./configure
-    make
-
-    # Install the binary and man page
-    echo "Installing the binary and man page..."
-    sudo cp src/neo /usr/local/bin/neo-matrix
-    sudo cp doc/neo.6 /usr/local/share/man/man6/neo-matrix.6
-
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    echo "Detected Linux."
-
-    if [[ -f /etc/arch-release ]]; then
-        # Arch Linux-specific commands
-        echo "Detected Arch Linux."
-        install_arch_dependencies
-    elif [[ -f /etc/debian_version ]]; then
-        # Debian-based Linux-specific commands
-        echo "Detected Debian-based Linux."
-        install_debian_dependencies
-    elif [[ -f /etc/fedora-release ]]; then
-        # Fedora/Red Hat-specific commands
-        echo "Detected Fedora/Red Hat Linux."
-        install_fedora_dependencies
-    fi
-
-    # Install Hanazono font
-    install_hanazono_font
-
-    # Clone the repository
-    echo "Cloning Neo-Matrix repository..."
-    git clone https://github.com/st3w/neo.git
-    cd neo
-
-    # Build the project
-    echo "Building the project..."
-    ./autogen.sh
-    ./configure
-    make
-
-    # Install the binary and man page
-    echo "Installing the binary and man page..."
-    sudo install -Dm755 src/neo /usr/bin/neo-matrix
-    sudo install -Dm644 doc/neo.6 /usr/share/man/man6/neo-matrix.6
-
-elif [[ "$OSTYPE" == "freebsd"* ]]; then
-    # FreeBSD-specific commands
-    echo "Detected FreeBSD."
-
-    # Install dependencies
-    install_freebsd_dependencies
-
-    # Install Hanazono font
-    install_hanazono_font
-
-    # Clone the repository
-    echo "Cloning Neo-Matrix repository..."
-    git clone https://github.com/st3w/neo.git
-    cd neo
-
-    # Build the project
-    echo "Building the project..."
-    ./autogen.sh
-    ./configure
-    make
-
-    # Install the binary and man page
-    echo "Installing the binary and man page..."
-    sudo install -Dm755 src/neo /usr/local/bin/neo-matrix
-    sudo install -Dm644 doc/neo.6 /usr/local/share/man/man6/neo-matrix.6
-
-else
-    echo "Unsupported OS. Please manually install dependencies and Neo-Matrix."
+die() {
+    printf '[neo-installer] ERROR: %s\n' "$*" >&2
     exit 1
-fi
+}
 
-echo "+------------------------+------------------------------+"
-echo "| Installation complete!                                 |"
-echo "| You can now run the Neo-Matrix application using       |"
-echo "| 'neo-matrix'. Thank you for using the installer!       |"
-echo "+------------------------+------------------------------+"
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
+cleanup() {
+    if [[ -n "${BUILD_DIR}" && -d "${BUILD_DIR}" ]]; then
+        rm -rf "${BUILD_DIR}"
+    fi
+}
+trap cleanup EXIT
+
+require_sudo() {
+    if [[ "$(id -u)" -ne 0 ]] && ! command_exists sudo; then
+        die "sudo is required to install system packages and neo."
+    fi
+}
+
+as_root() {
+    if [[ "$(id -u)" -eq 0 ]]; then
+        "$@"
+    else
+        sudo "$@"
+    fi
+}
+
+detect_platform() {
+    case "$(uname -s)" in
+        Darwin)
+            PLATFORM="macos"
+            ;;
+        Linux)
+            [[ -r /etc/os-release ]] || die "Cannot determine Linux distribution: /etc/os-release is missing."
+            # shellcheck disable=SC1091
+            . /etc/os-release
+            case "${ID:-}" in
+                arch|manjaro|endeavouros)
+                    PLATFORM="arch"
+                    ;;
+                debian|ubuntu|linuxmint|pop|kali|raspbian)
+                    PLATFORM="debian"
+                    ;;
+                *)
+                    case " ${ID_LIKE:-} " in
+                        *" arch "*) PLATFORM="arch" ;;
+                        *" debian "*|*" ubuntu "*) PLATFORM="debian" ;;
+                        *) die "Unsupported Linux distribution: ${PRETTY_NAME:-${ID:-unknown}}" ;;
+                    esac
+                    ;;
+            esac
+            ;;
+        FreeBSD)
+            PLATFORM="freebsd"
+            MAKE_CMD="gmake"
+            ;;
+        *)
+            die "Unsupported operating system: $(uname -s)"
+            ;;
+    esac
+}
+
+install_dependencies() {
+    case "${PLATFORM}" in
+        macos)
+            command_exists brew || die "Homebrew is required on macOS. Install it from https://brew.sh and run this installer again."
+            log "Installing build dependencies with Homebrew..."
+            brew install autoconf automake libtool ncurses pkg-config git
+            ;;
+        arch)
+            require_sudo
+            log "Installing build dependencies with pacman..."
+            as_root pacman -S --needed --noconfirm base-devel autoconf automake libtool ncurses git
+            ;;
+        debian)
+            require_sudo
+            log "Installing build dependencies with apt..."
+            as_root apt-get update
+            as_root apt-get install -y build-essential autoconf automake libtool libncurses-dev pkg-config git
+            ;;
+        freebsd)
+            require_sudo
+            log "Installing build dependencies with pkg..."
+            as_root pkg install -y autoconf automake libtool ncurses pkgconf git gmake
+            ;;
+    esac
+}
+
+configure_project() {
+    log "Running autogen.sh..."
+    ./autogen.sh
+
+    if [[ "${PLATFORM}" == "macos" ]]; then
+        local ncurses_prefix
+        ncurses_prefix="$(brew --prefix ncurses)"
+        log "Configuring with Homebrew ncurses..."
+        CPPFLAGS="-I${ncurses_prefix}/include" \
+        LDFLAGS="-L${ncurses_prefix}/lib" \
+        PKG_CONFIG_PATH="${ncurses_prefix}/lib/pkgconfig${PKG_CONFIG_PATH:+:${PKG_CONFIG_PATH}}" \
+        ./configure
+    else
+        log "Configuring project..."
+        ./configure
+    fi
+}
+
+build_project() {
+    local jobs=2
+
+    if command_exists getconf; then
+        jobs="$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf '2')"
+    elif command_exists sysctl; then
+        jobs="$(sysctl -n hw.ncpu 2>/dev/null || printf '2')"
+    fi
+
+    [[ "${jobs}" =~ ^[0-9]+$ ]] || jobs=2
+
+    log "Building neo with ${jobs} job(s)..."
+    "${MAKE_CMD}" -j"${jobs}"
+}
+
+install_project() {
+    require_sudo
+    log "Installing neo using the project's make install target..."
+    if [[ "$(id -u)" -eq 0 ]]; then
+        "${MAKE_CMD}" install
+    else
+        sudo "${MAKE_CMD}" install
+    fi
+}
+
+verify_installation() {
+    if command_exists neo; then
+        log "Installation complete: $(command -v neo)"
+        log "Run 'neo' to start the application."
+    else
+        log "Installation completed, but 'neo' is not currently on PATH."
+        log "Check the installation prefix reported by ./configure."
+    fi
+}
+
+main() {
+    log "Neo installer"
+    detect_platform
+    log "Detected platform: ${PLATFORM}"
+
+    install_dependencies
+
+    command_exists git || die "git is required but was not found after dependency installation."
+
+    BUILD_DIR="$(mktemp -d "${TMPDIR:-/tmp}/neo-build.XXXXXX")"
+    log "Cloning ${REPO_URL}..."
+    git clone --depth 1 "${REPO_URL}" "${BUILD_DIR}/neo"
+
+    cd "${BUILD_DIR}/neo"
+    configure_project
+    build_project
+    install_project
+    verify_installation
+}
+
+main "$@"
